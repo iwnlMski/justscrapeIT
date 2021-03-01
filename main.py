@@ -1,5 +1,8 @@
 import requests
 from bs4 import BeautifulSoup
+from database import add_to_database, offer_not_exists
+from selenium import webdriver
+from time import time
 
 
 class Offer:
@@ -11,34 +14,57 @@ class Offer:
         self.salary = salary
 
 
+def initialize_chrome_driver():
+    op = webdriver.ChromeOptions()
+    op.add_argument('headless')
+    return webdriver.Chrome(options=op)
+
+
 def get_response_from_url(url):
     return requests.get(url)
 
 
 def split_response_into_list(response):
-    return [ele+'</entry>' for ele in response.text.split('</entry>')]
+    ls = [ele+'</entry>' for ele in response.text.split('</entry>')]
+    ls.pop()
+    return ls
 
 
-def create_list_of_offers(splitted_response):
+def get_skillset_from_url(url, driver):
+    driver.get(url)
+    skill_set_soup = BeautifulSoup(driver.page_source, 'html.parser')
+    return [x['title'] for x in skill_set_soup.find_all(attrs={'class': 'css-1xm32e0'})]
+
+
+def update_database_with_offers(splitted_response):
+    driver = initialize_chrome_driver()
     for offer in splitted_response:
         soup = BeautifulSoup(offer, 'html.parser')
-        offer_link = soup.entry.id.text.strip()
-        offer_title = soup.entry.title.text.strip()
-        company_name = soup.entry.author.text.strip()
-        soup = BeautifulSoup(soup.summary.text, 'html.parser')
-        offer_salary = soup.p.text.strip().splitlines()[0]
-        offer_location = soup.p.text.strip().splitlines()[1]
-        return Offer(offer_link, offer_title, offer_location, company_name, offer_salary)
-        break
+        if offer_not_exists(soup.entry.id.text.strip()):
+            summary_soup = BeautifulSoup(soup.summary.text, 'html.parser')
+            skills = get_skillset_from_url(soup.entry.id.text.strip(), driver)
+            skills = ', '.join(skills)
+            data = {
+                'link': soup.entry.id.text.strip(),
+                'title': soup.entry.title.text.strip(),
+                'company': soup.entry.author.text.strip(),
+                'salary': summary_soup.p.text.strip().splitlines()[0],
+                'location': summary_soup.p.text.strip().splitlines()[1],
+                'skills': skills,
+            }
+            add_to_database(data)
+        else:
+            print('Already exists')
+
+    return print('Done updating')
 
 
 URL = 'https://justjoin.it/feed.atom'
 response = get_response_from_url(URL)
 splitted_response = split_response_into_list(response)
 
-temp = create_list_of_offers(splitted_response)
-print(temp.offer_address)
-print(temp.salary)
-print(temp.company)
-print(temp.location)
-print(temp.offer_name)
+
+t1 = time()
+update_database_with_offers(splitted_response)
+t2 = time()
+print(f"It took {t2 - t1} s")

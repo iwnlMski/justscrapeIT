@@ -1,6 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
-from database import add_to_database, offer_not_exists
+from database import add_to_database, offer_not_exists, fill_table_with_skills
 from selenium import webdriver
 from time import time
 
@@ -66,11 +66,21 @@ def update_database_with_offers(splitted_response):
     return print('Done updating')
 
 
+def get_tech_by_language(lang):
+    pass
+
+
 URL = 'https://justjoin.it/feed.atom'
 response = get_response_from_url(URL)
 splitted_response = generate_offer_response(response)
 
-t1 = time()
-update_database_with_offers(splitted_response)
-t2 = time()
-print(f"It took {t2 - t1} s")
+# t1 = time()
+# update_database_with_offers(splitted_response)
+# t2 = time()
+# print(f"It took {t2 - t1} s")
+temp = fill_table_with_skills('python')
+
+# for skill_set in temp:
+#     for skill in skill_set:
+#         print(type(skill.split(', ')))
+#         print(skill.split(', '))

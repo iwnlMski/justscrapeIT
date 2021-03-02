@@ -13,7 +13,6 @@ cursor = mydb.cursor()
 # mydb.commit()
 
 
-
 def initialize_table():
     try:
         cursor.execute(
@@ -45,3 +44,79 @@ def add_to_database(data):
     val = (data['link'], data['title'], data['company'], data['salary'], data['location'], data['skills'])
     cursor.execute(sql, val)
     mydb.commit()
+
+
+def create_table_for_language(language):
+    sql_create_table = f'CREATE TABLE {language} (technology VARCHAR(255), count INT)'
+    cursor.execute(sql_create_table)
+
+
+def select_offers_with_language(language):
+    sql_select_by_lang = 'SELECT skills FROM offers WHERE skills LIKE %s'
+    val_search_lang = ("%"+language+"%", )
+    cursor.execute(sql_select_by_lang, val_search_lang)
+    return cursor.fetchall()
+
+
+def get_tech_from_offer(results):
+    for tech in results:
+        yield tech
+
+
+def filter_by_language(language):
+    try:
+        create_table_for_language(language)
+    except mysql.connector.errors.ProgrammingError:
+        print("already exists")
+    offers_with_language = select_offers_with_language(language)
+    offer_gen = get_tech_from_offer(offers_with_language)
+    for offer in offer_gen:
+        yield offer
+
+
+def skill_in_table(skill, language):
+    sql = f'SELECT * FROM {language} WHERE technology = \'{skill}\''
+    print(sql)
+    cursor.execute(sql)
+    return True if cursor.fetchall() else False
+
+
+def get_skill_count(skill, language):
+    sql = f'SELECT count FROM {language} WHERE technology = \'{skill}\''
+    cursor.execute(sql)
+    count = cursor.fetchall()
+    return int(count[0][0])
+
+
+def increment_skill_counter(skill, language):
+    incr_count = get_skill_count(skill, language) + 1
+    sql = f'UPDATE {language} SET count = {incr_count} WHERE technology = \'{skill}\''
+    cursor.execute(sql)
+
+
+def create_skill_record(skill, language):
+    sql = f'INSERT INTO {language} (technology, count) VALUES (\'{skill}\', {1})'
+    cursor.execute(sql)
+
+
+def check_for_not_allowed_signs(word):
+    if '\'' in word:
+        return word.replace('\'', '')
+    else:
+        return word
+
+
+def fill_table_with_skills(language):
+    skill_set_gen = filter_by_language(language)
+    for skill_set in skill_set_gen:
+        for skill in skill_set[0].split(', '):
+            skill = check_for_not_allowed_signs(skill)
+            if skill_in_table(skill, language):
+                increment_skill_counter(skill, language)
+            else:
+                create_skill_record(skill, language)
+    mydb.commit()
+
+
+def correct_skills_table():
+    pass

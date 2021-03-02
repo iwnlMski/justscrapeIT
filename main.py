@@ -24,10 +24,9 @@ def get_response_from_url(url):
     return requests.get(url)
 
 
-def split_response_into_list(response):
-    ls = [ele+'</entry>' for ele in response.text.split('</entry>')]
-    ls.pop()
-    return ls
+def generate_offer_response(response):
+    for offer in response.text.split('</entry>')[0:-1]:
+        yield offer + '</entry>'
 
 
 def get_skillset_from_url(url, driver):
@@ -36,7 +35,13 @@ def get_skillset_from_url(url, driver):
     return [x['title'] for x in skill_set_soup.find_all(attrs={'class': 'css-1xm32e0'})]
 
 
+def limit_update_check():
+    for limit in range(101):
+        yield limit
+
+
 def update_database_with_offers(splitted_response):
+    limit = limit_update_check()
     driver = initialize_chrome_driver()
     for offer in splitted_response:
         soup = BeautifulSoup(offer, 'html.parser')
@@ -54,15 +59,16 @@ def update_database_with_offers(splitted_response):
             }
             add_to_database(data)
         else:
-            print('Already exists')
-
+            try:
+                next(limit)
+            except StopIteration:
+                break
     return print('Done updating')
 
 
 URL = 'https://justjoin.it/feed.atom'
 response = get_response_from_url(URL)
-splitted_response = split_response_into_list(response)
-
+splitted_response = generate_offer_response(response)
 
 t1 = time()
 update_database_with_offers(splitted_response)

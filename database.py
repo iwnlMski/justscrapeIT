@@ -9,6 +9,9 @@ mydb = mysql.connector.connect(
 
 cursor = mydb.cursor()
 # cursor.execute('ALTER TABLE offers CHANGE skills skills LONGTEXT')
+# cursor.execute('DELETE FROM offers WHERE id > 0')
+# mydb.commit()
+
 
 
 def initialize_table():

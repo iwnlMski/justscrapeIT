@@ -106,7 +106,7 @@ def check_for_not_allowed_signs(word):
         return word
 
 
-def fill_table_with_skills(language):
+def create_table_with_tech_for_lang(language):
     skill_set_gen = filter_by_language(language)
     for skill_set in skill_set_gen:
         for skill in skill_set[0].split(', '):
@@ -118,5 +118,9 @@ def fill_table_with_skills(language):
     mydb.commit()
 
 
-def correct_skills_table():
-    pass
+def delete_table_of_skills(language):
+    try:
+        sql = f'DROP TABLE {language}'
+        cursor.execute(sql)
+    except mysql.connector.errors.ProgrammingError:
+        print('No such table')

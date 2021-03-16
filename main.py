@@ -1,8 +1,9 @@
 import requests
 from bs4 import BeautifulSoup
-from database import add_to_database, offer_not_exists, fill_table_with_skills
+from database import add_to_database, offer_not_exists, create_table_with_tech_for_lang, delete_table_of_skills
 from selenium import webdriver
 from time import time
+import threading
 
 
 class Offer:
@@ -12,6 +13,11 @@ class Offer:
         self.location = location
         self.company = company
         self.salary = salary
+
+
+class myThread(threading.Thread):
+    def __init__(self, threadID, name, counter):
+        pass
 
 
 def initialize_chrome_driver():
@@ -40,9 +46,8 @@ def limit_update_check():
         yield limit
 
 
-def update_database_with_offers(splitted_response):
+def update_database_with_offers(splitted_response, driver):
     limit = limit_update_check()
-    driver = initialize_chrome_driver()
     for offer in splitted_response:
         soup = BeautifulSoup(offer, 'html.parser')
         if offer_not_exists(soup.entry.id.text.strip()):
@@ -66,21 +71,16 @@ def update_database_with_offers(splitted_response):
     return print('Done updating')
 
 
-def get_tech_by_language(lang):
-    pass
-
-
 URL = 'https://justjoin.it/feed.atom'
 response = get_response_from_url(URL)
 splitted_response = generate_offer_response(response)
 
-# t1 = time()
-# update_database_with_offers(splitted_response)
-# t2 = time()
-# print(f"It took {t2 - t1} s")
-temp = fill_table_with_skills('python')
+t1 = time()
+driver = initialize_chrome_driver()
+update_database_with_offers(splitted_response, driver)
+t2 = time()
+print(f"It took {t2 - t1} s")
 
-# for skill_set in temp:
-#     for skill in skill_set:
-#         print(type(skill.split(', ')))
-#         print(skill.split(', '))
+# create_table_with_tech_for_lang('python')
+# delete_table_of_skills('python')
+
